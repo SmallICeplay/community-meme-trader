@@ -899,7 +899,7 @@ function SignalFeed() {
                       </td>
                       <td className="px-2 py-1.5 text-center">
                         {s.push_count > 1
-                          ? <span className="text-orange-400 font-bold">第{s.push_count}次</span>
+                          ? <span className={s.push_count >= 5 ? 'text-red-400 font-bold' : 'text-orange-400 font-bold'}>×{s.push_count}</span>
                           : <span className="text-gray-600">首次</span>}
                       </td>
                       <td className="px-2 py-1.5 text-center">

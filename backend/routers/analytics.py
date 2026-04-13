@@ -321,6 +321,14 @@ async def get_recent_signals(
     result = await db.execute(q)
     rows = result.scalars().all()
 
+    # 批量查每条记录的 CA 是第几次出现（在整个 ca_feed 表中的历史推送次数）
+    ca_list = list({r.ca for r in rows})
+    ca_counts: dict[str, int] = {}
+    if ca_list:
+        count_q = select(CaFeed.ca, func.count().label("cnt")).where(CaFeed.ca.in_(ca_list)).group_by(CaFeed.ca)
+        count_result = await db.execute(count_q)
+        ca_counts = {row.ca: row.cnt for row in count_result}
+
     out = []
     for r in rows:
         # 从 raw_json 补读 qun_name（社区）和 qy_name（喊单人）及胜率
@@ -330,10 +338,8 @@ async def get_recent_signals(
         try:
             raw = _json.loads(r.raw_json or "{}")
             group_raw = raw.get("qun_name", "") or ""
-            # sender 字段空时从 raw_json 补读 qy_name
             if not sender_raw:
                 sender_raw = raw.get("qy_name", "") or ""
-            # win_rate 为 0 时也从 raw_json 补读
             if not win_rate:
                 win_rate = float(raw.get("sender_win_rate") or 0)
         except Exception:
@@ -345,7 +351,7 @@ async def get_recent_signals(
             "ca": r.ca,
             "chain": r.chain,
             "symbol": r.symbol or r.token_name or "",
-            "push_count": r.grcxcs,
+            "push_count": ca_counts.get(r.ca, 1),   # 我们自己统计的总推送次数
             "sender_id": _short_hash(sender_raw) if sender_raw else None,
             "sender_win_rate": round(win_rate, 1) if win_rate else None,
             "group_id": _short_hash(group_raw) if group_raw else None,
