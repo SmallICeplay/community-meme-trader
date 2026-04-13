@@ -32,7 +32,7 @@ export default function LiveLog({ logs, connected }) {
           <span className="text-xs text-gray-500">{connected ? '已连接' : '断开'}</span>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto font-mono space-y-1 min-h-0" style={{maxHeight: 'calc(100vh - 280px)', fontSize: '15px'}}>
+      <div className="flex-1 overflow-y-auto font-mono space-y-1 min-h-0" style={{maxHeight: 'calc(100vh - 280px)', fontSize: '15px', lineHeight: '1.6'}}>
         {logs.length === 0 && (
           <div className="text-gray-600 text-center py-8">等待事件...</div>
         )}
