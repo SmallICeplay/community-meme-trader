@@ -860,7 +860,7 @@ function SignalFeed() {
                   return (
                     <tr key={s.id} className={clsx(
                       'border-b border-dark-700/50 hover:bg-dark-700/20 transition-colors log-item-enter',
-                      isBought && 'bg-green-900/10'
+                      isBought ? 'bg-green-900/10' : i < 3 ? 'bg-accent-blue/5 border-l-2 border-accent-blue/40'  : ''
                     )}
                       style={{ animationDelay: `${i * 30}ms` }}
                     >
