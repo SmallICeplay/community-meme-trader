@@ -324,7 +324,7 @@ function ChainBadge({ chain }) {
   if (!chain) return null
   const cls = CHAIN_COLOR[chain?.toUpperCase()] || 'text-gray-400 bg-gray-400/10'
   return (
-    <span className={clsx('px-1 py-0.5 rounded text-[9px] font-bold shrink-0', cls)}>
+    <span className={clsx('px-1 py-0.5 rounded text-xs font-bold shrink-0', cls)}>
       {chain}
     </span>
   )
@@ -367,13 +367,13 @@ function SideLog({ logs, connected }) {
           {/* 头部：icon + 名称 + 链 + 时间 */}
           <div className="flex items-center gap-1.5 min-w-0">
             <TokenLogo url={d.logo_url} name={name} size={16} />
-            <span className="text-[10px] font-bold text-green-400 shrink-0">买入</span>
-            <span className="text-gray-100 font-semibold text-xs truncate flex-1">{name}</span>
+            <span className="text-xs font-bold text-green-400 shrink-0">买入</span>
+            <span className="text-gray-100 font-semibold text-sm truncate flex-1">{name}</span>
             <ChainBadge chain={d.chain} />
-            <span className="text-gray-600 text-[10px] shrink-0 tabular-nums">{ts}</span>
+            <span className="text-gray-600 text-xs shrink-0 tabular-nums">{ts}</span>
           </div>
           {/* 详情行 */}
-          <div className="flex items-center gap-3 text-[10px] text-gray-400 pl-0.5 flex-wrap">
+          <div className="flex items-center gap-3 text-xs text-gray-400 pl-0.5 flex-wrap">
             <span>投入 <span className="text-gray-200 font-mono">{d.amount_usdt}U</span></span>
             <span>入场 <span className="text-gray-200 font-mono">{fmtPrice(d.entry_price)}</span></span>
             <span>数量 <span className="text-gray-200 font-mono">{d.token_amount > 1000
@@ -407,15 +407,15 @@ function SideLog({ logs, connected }) {
           {/* 头部 */}
           <div className="flex items-center gap-1.5 min-w-0">
             <TokenLogo url={d.logo_url} name={name} size={16} />
-            <span className={clsx('text-[10px] font-bold shrink-0', profit ? 'text-green-400' : 'text-red-400')}>
+            <span className={clsx('text-xs font-bold shrink-0', profit ? 'text-green-400' : 'text-red-400')}>
               卖出
             </span>
-            <span className="text-gray-100 font-semibold text-xs truncate flex-1">{name}</span>
+            <span className="text-gray-100 font-semibold text-sm truncate flex-1">{name}</span>
             {/* 原因标签 */}
-            <span className={clsx('px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0', r.cls)}>
+            <span className={clsx('px-1.5 py-0.5 rounded text-xs font-bold shrink-0', r.cls)}>
               {r.icon} {r.label}
             </span>
-            <span className="text-gray-600 text-[10px] shrink-0 tabular-nums">{ts}</span>
+            <span className="text-gray-600 text-xs shrink-0 tabular-nums">{ts}</span>
           </div>
           {/* PnL 核心数据 */}
           <div className="flex items-center gap-3 pl-0.5">
@@ -426,13 +426,13 @@ function SideLog({ logs, connected }) {
               {pnlSign}{d.pnl_usdt?.toFixed(3)}U
             </span>
             {multiple !== null && (
-              <span className="text-gray-500 text-[10px] tabular-nums">
+              <span className="text-gray-500 text-xs tabular-nums">
                 {multiple >= 1 ? `${multiple.toFixed(2)}x` : `${(multiple * 100).toFixed(0)}%`}
               </span>
             )}
             {/* Gas + 净盈亏 */}
             {hasGas && (
-              <span className="ml-auto flex items-center gap-1.5 text-[10px]">
+              <span className="ml-auto flex items-center gap-1.5 text-xs">
                 <span className="text-orange-400/80">⛽{d.gas_fee_usd.toFixed(4)}U</span>
                 <span className="text-gray-600">→</span>
                 <span className={clsx('font-mono font-semibold', netPnl >= 0 ? 'text-green-400' : 'text-red-400')}>
@@ -442,7 +442,7 @@ function SideLog({ logs, connected }) {
             )}
           </div>
           {/* 价格对比行 */}
-          <div className="flex items-center gap-1.5 text-[10px] text-gray-500 pl-0.5">
+          <div className="flex items-center gap-1.5 text-xs text-gray-500 pl-0.5">
             <ChainBadge chain={d.chain} />
             <span>入 <span className="text-gray-400 font-mono">{fmtPrice(d.entry_price)}</span></span>
             <span className="text-gray-700">→</span>
@@ -464,23 +464,22 @@ function SideLog({ logs, connected }) {
       return (
         <div key={log.id} className="rounded-xl border border-red-800/60 bg-red-900/15 px-3 py-2.5 space-y-1.5">
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-[10px] font-bold text-red-400 shrink-0">❌ 买入失败</span>
-            <span className="text-gray-100 font-semibold text-xs truncate flex-1">{name}</span>
+            <span className="text-xs font-bold text-red-400 shrink-0">❌ 买入失败</span>
+            <span className="text-gray-100 font-semibold text-sm truncate flex-1">{name}</span>
             {d.tried_amounts
-              ? <span className="text-gray-500 text-[10px] shrink-0">试: {d.tried_amounts}</span>
-              : d.amount_usdt > 0 && <span className="text-gray-500 text-[10px] shrink-0">{d.amount_usdt}U</span>
+              ? <span className="text-gray-500 text-xs shrink-0">试: {d.tried_amounts}</span>
+              : d.amount_usdt > 0 && <span className="text-gray-500 text-xs shrink-0">{d.amount_usdt}U</span>
             }
             <ChainBadge chain={d.chain} />
-            <span className="text-gray-600 text-[10px] shrink-0 tabular-nums">{ts}</span>
+            <span className="text-gray-600 text-xs shrink-0 tabular-nums">{ts}</span>
           </div>
-          <div className="text-[10px] text-red-300/90 leading-relaxed pl-0.5">
+          <div className="text-xs text-red-300/90 leading-relaxed pl-0.5">
             {d.reason}
           </div>
           {d.error && (() => {
-            // 只显示 status=XXXX 部分，避免和 reason 重复
             const m = d.error.match(/status=(\d+)/)
             return m ? (
-              <div className="text-[9px] text-gray-600 font-mono pl-0.5">
+              <div className="text-xs text-gray-600 font-mono pl-0.5">
                 AVE error {m[1]}
               </div>
             ) : null
@@ -499,28 +498,28 @@ function SideLog({ logs, connected }) {
       return (
         <div key={log.id} className={`rounded-xl border px-3 py-2.5 space-y-1.5 ${isAbandoned ? 'border-red-700/80 bg-red-950/30' : 'border-orange-800/60 bg-orange-900/10'}`}>
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className={`text-[10px] font-bold shrink-0 ${isAbandoned ? 'text-red-400' : 'text-orange-400'}`}>
+            <span className={`text-xs font-bold shrink-0 ${isAbandoned ? 'text-red-400' : 'text-orange-400'}`}>
               {isAbandoned ? '🚨 放弃卖出' : '⚠ 卖出失败'}
             </span>
-            <span className="text-gray-100 font-semibold text-xs truncate flex-1">{name}</span>
+            <span className="text-gray-100 font-semibold text-sm truncate flex-1">{name}</span>
             {triggerLabel && !isAbandoned && (
-              <span className="text-[9px] text-orange-300/70 bg-orange-900/30 px-1.5 py-0.5 rounded shrink-0">
+              <span className="text-xs text-orange-300/70 bg-orange-900/30 px-1.5 py-0.5 rounded shrink-0">
                 触发{triggerLabel}
               </span>
             )}
             <ChainBadge chain={d.chain} />
-            <span className="text-gray-600 text-[10px] shrink-0 tabular-nums">{ts}</span>
+            <span className="text-gray-600 text-xs shrink-0 tabular-nums">{ts}</span>
           </div>
           <div className="flex items-center gap-2 pl-0.5">
-            <span className={`text-[10px] leading-relaxed flex-1 ${isAbandoned ? 'text-red-300' : 'text-orange-300/90'}`}>
+            <span className={`text-xs leading-relaxed flex-1 ${isAbandoned ? 'text-red-300' : 'text-orange-300/90'}`}>
               {d.reason}
             </span>
             {d.fail_count > 0 && (
-              <span className="text-[9px] text-gray-600 shrink-0">累计失败 {d.fail_count} 次</span>
+              <span className="text-xs text-gray-600 shrink-0">累计失败 {d.fail_count} 次</span>
             )}
           </div>
           {d.error && (
-            <div className="text-[9px] text-gray-600 font-mono break-all leading-relaxed pl-0.5 border-t border-orange-900/40 pt-1">
+            <div className="text-xs text-gray-600 font-mono break-all leading-relaxed pl-0.5 border-t border-orange-900/40 pt-1">
               {d.error.slice(0, 160)}
             </div>
           )}
@@ -539,19 +538,19 @@ function SideLog({ logs, connected }) {
       const isHot = qwfcDelta >= 10  // 热度暴涨标记
       return (
         <div key={log.id} className="flex items-center gap-1.5 px-1 py-0.5 hover:bg-white/[0.02] rounded group">
-          <span className="text-gray-700 shrink-0 tabular-nums text-[10px]">{ts}</span>
+          <span className="text-gray-700 shrink-0 tabular-nums text-xs">{ts}</span>
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isFirst ? 'bg-blue-500/60' : 'bg-gray-600/60'}`} />
           {isFirst
-            ? <span className="text-blue-400 text-[10px] font-bold shrink-0">新CA</span>
-            : <span className="text-gray-500 text-[10px] font-bold shrink-0">第{pushCount}次</span>
+            ? <span className="text-blue-400 text-xs font-bold shrink-0">新CA</span>
+            : <span className="text-gray-500 text-xs font-bold shrink-0">第{pushCount}次</span>
           }
           {name
-            ? <span className={`text-xs font-semibold truncate ${isFirst ? 'text-blue-200' : 'text-gray-400'}`}>{name}</span>
-            : <span className="text-blue-400/60 text-[10px] font-mono truncate">{caShort}</span>
+            ? <span className={`text-sm font-semibold truncate ${isFirst ? 'text-blue-200' : 'text-gray-400'}`}>{name}</span>
+            : <span className="text-blue-400/60 text-xs font-mono truncate">{caShort}</span>
           }
-          {name && <span className="text-gray-600 text-[10px] font-mono hidden group-hover:inline truncate">{caShort}</span>}
+          {name && <span className="text-gray-600 text-xs font-mono hidden group-hover:inline truncate">{caShort}</span>}
           {!isFirst && d.qwfc > 0 && (
-            <span className={`text-[9px] shrink-0 tabular-nums ${isHot ? 'text-orange-400' : 'text-gray-600'}`}>
+            <span className={`text-xs shrink-0 tabular-nums ${isHot ? 'text-orange-400' : 'text-gray-600'}`}>
               {isHot ? `🔥+${qwfcDelta}` : `+${qwfcDelta}`}
             </span>
           )}
@@ -590,8 +589,7 @@ function SideLog({ logs, connected }) {
           )}
           <div className="flex items-center gap-1.5">
             <div className={clsx('w-1.5 h-1.5 rounded-full', connected ? 'bg-green-400 animate-pulse' : 'bg-red-500')} />
-            <span className="text-[10px] text-gray-600">{connected ? '已连接' : '断开'}</span>
-          </div>
+            <span className="text-[10px] text-gray-600">{connected ? '已连接' : '断开'}</span>          </div>
         </div>
       </div>
 
@@ -602,7 +600,7 @@ function SideLog({ logs, connected }) {
         className="flex-1 overflow-y-auto px-2 py-2 font-mono space-y-1 scroll-smooth"
       >
         {logs.length === 0 && (
-          <div className="text-gray-600 text-center py-8 text-[11px]">等待事件...</div>
+          <div className="text-gray-600 text-center py-8 text-xs">等待事件...</div>
         )}
         {/* 正序显示，最新在底部 */}
         {[...logs].reverse().map(log => renderLog(log))}
