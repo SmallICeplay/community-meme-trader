@@ -177,6 +177,7 @@ function BotPositions({ onRefresh }) {
                 <th className="text-right py-2 pr-3">持仓(U)</th>
                 <th className="text-right py-2 pr-3">P&amp;L</th>
                 <th className="text-right py-2 pr-3">持仓时间</th>
+                <th className="text-center py-2 pr-3">喊单</th>
                 <th className="text-right py-2"></th>
               </tr>
             </thead>
@@ -192,11 +193,60 @@ function BotPositions({ onRefresh }) {
   )
 }
 
+// ── 喊单编号轮播 ─────────────────────────────────────────────────
+function CallerCycle({ callers }) {
+  const [idx, setIdx] = useState(0)
+  useEffect(() => {
+    if (!callers?.length) return
+    const t = setInterval(() => setIdx(i => (i + 1) % callers.length), 2500)
+    return () => clearInterval(t)
+  }, [callers?.length])
+  if (!callers?.length) return <span className="text-gray-700 text-[10px]">—</span>
+  const c = callers[idx]
+  return (
+    <div className="flex flex-col items-center gap-0.5 caller-cycle" key={idx}>
+      {c.g && <span className="text-blue-400/80 bg-blue-900/20 px-1 py-0.5 rounded text-[10px] font-mono leading-none">社区#{c.g}</span>}
+      {c.s && <span className="text-orange-400/80 bg-orange-900/20 px-1 py-0.5 rounded text-[10px] font-mono leading-none">#{c.s}</span>}
+    </div>
+  )
+}
+
+// ── 卖出进度按钮（接近止盈/止损时脉冲） ────────────────────────────
+function SellButton({ pnl, loading, onClick }) {
+  const stopLoss = 30
+  const takeProfit = 50
+  const urgency = pnl <= -(stopLoss * 0.7) || pnl >= (takeProfit * 0.7)  // 达到70%阈值开始脉冲
+  const pct = pnl >= 0
+    ? Math.min(pnl / takeProfit * 100, 100)
+    : Math.min(Math.abs(pnl) / stopLoss * 100, 100)
+  const color = pnl >= 0 ? '#00ff87' : '#ff4466'
+  return (
+    <div className="flex flex-col items-end gap-1">
+      {/* 进度弧形指示 */}
+      <div className="relative w-10 h-1.5 bg-dark-600 rounded-full overflow-hidden">
+        <div
+          className="absolute left-0 top-0 h-full rounded-full transition-all duration-1000"
+          style={{ width: `${pct}%`, backgroundColor: color, opacity: 0.8 }}
+        />
+      </div>
+      <button
+        disabled={loading}
+        onClick={onClick}
+        className={clsx(
+          'px-2 py-1 text-xs rounded-lg font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed',
+          urgency
+            ? 'bg-accent-red text-white sell-pulse'
+            : 'bg-accent-red/70 hover:bg-accent-red text-white'
+        )}
+      >卖出</button>
+    </div>
+  )
+}
+
 // ── 单行持仓（带价格闪烁 + PnL进度条） ─────────────────────────
 function PositionRow({ p, loading, onClose }) {
   const flashCls = usePriceFlash(p.current_price)
   const pnl = p.pnl_pct ?? 0
-  // 行背景：盈利绿色 / 亏损红色，强度随 pnl 大小变化
   const rowBg = pnl >= 20
     ? 'bg-green-900/20 border-green-800/20'
     : pnl >= 5
@@ -229,9 +279,12 @@ function PositionRow({ p, loading, onClose }) {
         </div>
         <PnlBar pnl_pct={p.pnl_pct} />
       </td>
-      <td className="text-right py-2 pr-3 text-gray-500">{fmtDuration(p.hold_minutes)}</td>
+      <td className="text-right py-2 pr-3 text-gray-500 font-mono tabular-nums">{fmtDurationSec(p.hold_minutes)}</td>
+      <td className="text-center py-2 pr-3">
+        <CallerCycle callers={p.callers} />
+      </td>
       <td className="text-right py-2">
-        <Button size="sm" variant="danger" disabled={loading} onClick={() => onClose(p.id)}>卖出</Button>
+        <SellButton pnl={pnl} loading={loading} onClick={() => onClose(p.id)} />
       </td>
     </tr>
   )
@@ -477,4 +530,14 @@ function fmtDuration(minutes) {
   if (!minutes) return '—'
   if (minutes < 60) return `${Math.floor(minutes)}m`
   return `${Math.floor(minutes / 60)}h${Math.floor(minutes % 60)}m`
+}
+
+function fmtDurationSec(minutes) {
+  if (!minutes) return '—'
+  const totalSec = Math.floor(minutes * 60)
+  if (totalSec < 60) return `${totalSec}s`
+  if (totalSec < 3600) return `${Math.floor(totalSec / 60)}m${totalSec % 60}s`
+  const h = Math.floor(totalSec / 3600)
+  const m = Math.floor((totalSec % 3600) / 60)
+  return `${h}h${m}m`
 }

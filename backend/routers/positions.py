@@ -51,14 +51,48 @@ async def _get_token_meta(db: AsyncSession, ca: str) -> dict:
 
 @router.get("")
 async def get_open_positions(db: AsyncSession = Depends(get_db)):
+    import hashlib
+    def _hash(s):
+        if not s: return None
+        return hashlib.md5(s.encode('utf-8', errors='replace')).hexdigest()[:4].upper()
+
     result = await db.execute(
         select(Position).where(Position.status == "open").order_by(Position.open_time.desc())
     )
     positions = result.scalars().all()
+
+    # 批量查各持仓 CA 最近3条喊单记录
+    ca_list = [p.ca for p in positions]
+    callers_map: dict[str, list] = {}
+    if ca_list:
+        feeds_result = await db.execute(
+            select(CaFeed.ca, CaFeed.sender, CaFeed.raw_json)
+            .where(CaFeed.ca.in_(ca_list))
+            .order_by(CaFeed.received_at.desc())
+        )
+        for row in feeds_result:
+            ca = row.ca
+            sender_raw = row.sender or ""
+            group_raw = ""
+            try:
+                raw = json.loads(row.raw_json or "{}")
+                if not sender_raw:
+                    sender_raw = raw.get("qy_name", "") or ""
+                group_raw = raw.get("qun_name", "") or ""
+            except Exception:
+                pass
+            entry = {"s": _hash(sender_raw), "g": _hash(group_raw)}
+            if ca not in callers_map:
+                callers_map[ca] = []
+            if len(callers_map[ca]) < 3:
+                callers_map[ca].append(entry)
+
     out = []
     for p in positions:
         meta = await _get_token_meta(db, p.ca)
-        out.append(_serialize(p, meta))
+        d = _serialize(p, meta)
+        d["callers"] = callers_map.get(p.ca, [])
+        out.append(d)
     return out
 
 
