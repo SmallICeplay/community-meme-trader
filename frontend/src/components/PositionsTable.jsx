@@ -193,21 +193,58 @@ function BotPositions({ onRefresh }) {
   )
 }
 
-// ── 喊单编号轮播 ─────────────────────────────────────────────────
-function CallerCycle({ callers }) {
-  const [idx, setIdx] = useState(0)
-  useEffect(() => {
-    if (!callers?.length) return
-    const t = setInterval(() => setIdx(i => (i + 1) % callers.length), 2500)
-    return () => clearInterval(t)
-  }, [callers?.length])
+// ── 喊单编号常驻显示（扫光动效） ──────────────────────────────────
+function CallerBadges({ callers }) {
   if (!callers?.length) return <span className="text-gray-700 text-[10px]">—</span>
-  const c = callers[idx]
   return (
-    <div className="flex flex-col items-center gap-0.5 caller-cycle" key={idx}>
-      {c.g && <span className="text-blue-400/80 bg-blue-900/20 px-1 py-0.5 rounded text-[10px] font-mono leading-none">社区#{c.g}</span>}
-      {c.s && <span className="text-orange-400/80 bg-orange-900/20 px-1 py-0.5 rounded text-[10px] font-mono leading-none">#{c.s}</span>}
+    <div className="flex flex-col gap-0.5 items-start">
+      {callers.map((c, i) => (
+        <div key={i} className="flex gap-0.5 flex-wrap">
+          {c.g && (
+            <span
+              className="relative overflow-hidden text-blue-300 bg-blue-900/30 border border-blue-800/40 px-1.5 py-0.5 rounded text-[10px] font-mono leading-none"
+              style={{ animationDelay: `${i * 0.4}s` }}
+            >
+              <span className="shimmer-line" />
+              {c.g}
+            </span>
+          )}
+          {c.s && (
+            <span
+              className="relative overflow-hidden text-orange-300 bg-orange-900/30 border border-orange-800/40 px-1.5 py-0.5 rounded text-[10px] font-mono leading-none"
+              style={{ animationDelay: `${i * 0.4 + 0.2}s` }}
+            >
+              <span className="shimmer-line" />
+              {c.s}
+            </span>
+          )}
+        </div>
+      ))}
     </div>
+  )
+}
+
+// ── 实时毫秒计时器 ────────────────────────────────────────────────
+function LiveTimer({ openTime }) {
+  const [ms, setMs] = useState(() => Date.now() - new Date(openTime).getTime())
+  useEffect(() => {
+    const t = setInterval(() => setMs(Date.now() - new Date(openTime).getTime()), 100)
+    return () => clearInterval(t)
+  }, [openTime])
+
+  const totalMs = ms
+  const h = Math.floor(totalMs / 3600000)
+  const m = Math.floor((totalMs % 3600000) / 60000)
+  const s = Math.floor((totalMs % 60000) / 1000)
+  const centisec = Math.floor((totalMs % 1000) / 10)
+
+  return (
+    <span className="font-mono tabular-nums text-gray-400 text-xs">
+      {h > 0 && <span>{h}h</span>}
+      {(h > 0 || m > 0) && <span>{String(m).padStart(h > 0 ? 2 : 1, '0')}m</span>}
+      <span>{String(s).padStart(2, '0')}s</span>
+      <span className="text-gray-600">.{String(centisec).padStart(2, '0')}</span>
+    </span>
   )
 }
 
@@ -279,9 +316,11 @@ function PositionRow({ p, loading, onClose }) {
         </div>
         <PnlBar pnl_pct={p.pnl_pct} />
       </td>
-      <td className="text-right py-2 pr-3 text-gray-500 font-mono tabular-nums">{fmtDurationSec(p.hold_minutes)}</td>
+      <td className="text-right py-2 pr-3 text-gray-500 font-mono tabular-nums">
+        <LiveTimer openTime={p.open_time} />
+      </td>
       <td className="text-center py-2 pr-3">
-        <CallerCycle callers={p.callers} />
+        <CallerBadges callers={p.callers} />
       </td>
       <td className="text-right py-2">
         <SellButton pnl={pnl} loading={loading} onClick={() => onClose(p.id)} />

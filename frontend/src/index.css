@@ -108,13 +108,19 @@ body {
 }
 .count-roll { animation: count-up 0.4s cubic-bezier(0.22,1,0.36,1); overflow: hidden; display: inline-block; }
 
-/* 喊单编号轮播淡入淡出 */
-@keyframes caller-cycle {
-  0%, 20%  { opacity: 1; transform: translateY(0); }
-  25%, 95% { opacity: 0; transform: translateY(-6px); }
-  100%     { opacity: 1; transform: translateY(0); }
+/* 徽章扫光效果 */
+@keyframes shimmer {
+  0%   { transform: translateX(-100%) skewX(-15deg); }
+  100% { transform: translateX(200%) skewX(-15deg); }
 }
-.caller-cycle { animation: caller-cycle 3s ease-in-out infinite; }
+.shimmer-line {
+  position: absolute;
+  top: 0; left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  animation: shimmer 3s ease-in-out infinite;
+}
 
 /* 卖出倒计时脉冲边框 */
 @keyframes sell-pulse {
