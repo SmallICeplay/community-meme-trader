@@ -857,15 +857,17 @@ function SignalFeed() {
                   const chainCls = CHAIN_BADGE[s.chain?.toLowerCase()] || 'text-gray-400 bg-gray-400/10'
                   const isPassed = s.filter_passed
                   const isBought = s.bought
+                  const rowStyle = {
+                    animationDelay: `${i * 30}ms`,
+                    ...(isBought ? { backgroundColor: 'rgba(0,255,135,0.05)' } :
+                      i === 0 ? { backgroundColor: 'rgba(0,255,135,0.08)', borderLeft: '2px solid rgba(0,255,135,0.7)' } :
+                      i === 1 ? { backgroundColor: 'rgba(59,130,246,0.10)', borderLeft: '2px solid rgba(59,130,246,0.6)' } :
+                      i === 2 ? { backgroundColor: 'rgba(168,85,247,0.08)', borderLeft: '2px solid rgba(168,85,247,0.5)' } : {})
+                  }
                   return (
-                    <tr key={s.id} className={clsx(
-                      'border-b border-dark-700/50 hover:bg-dark-700/20 transition-colors log-item-enter',
-                      isBought ? 'bg-green-900/10' :
-                      i === 0 ? 'bg-green-900/20 border-l-2 border-green-400/70' :
-                      i === 1 ? 'bg-blue-900/20 border-l-2 border-blue-400/50' :
-                      i === 2 ? 'bg-purple-900/20 border-l-2 border-purple-400/40' : ''
-                    )}
-                      style={{ animationDelay: `${i * 30}ms` }}
+                    <tr key={s.id}
+                      className="border-b border-dark-700/50 hover:brightness-110 transition-all log-item-enter"
+                      style={rowStyle}
                     >
                       <td className="px-4 py-1.5 font-mono text-gray-500 whitespace-nowrap">{fmt(s.received_at)}</td>
                       <td className="px-2 py-1.5">
