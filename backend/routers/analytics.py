@@ -323,23 +323,31 @@ async def get_recent_signals(
 
     out = []
     for r in rows:
-        # 尝试从 raw_json 解析 qun_name
+        # 从 raw_json 补读 qun_name（社区）和 qy_name（喊单人）及胜率
         group_raw = ""
+        sender_raw = r.sender or ""
+        win_rate = r.sender_win_rate or 0.0
         try:
             raw = _json.loads(r.raw_json or "{}")
             group_raw = raw.get("qun_name", "") or ""
+            # sender 字段空时从 raw_json 补读 qy_name
+            if not sender_raw:
+                sender_raw = raw.get("qy_name", "") or ""
+            # win_rate 为 0 时也从 raw_json 补读
+            if not win_rate:
+                win_rate = float(raw.get("sender_win_rate") or 0)
         except Exception:
             pass
 
-        sender_raw = r.sender or ""
         out.append({
             "id": r.id,
             "received_at": r.received_at.isoformat(),
             "ca": r.ca,
             "chain": r.chain,
             "symbol": r.symbol or r.token_name or "",
-            "push_count": r.grcxcs,      # 第几次推送该 CA
+            "push_count": r.grcxcs,
             "sender_id": _short_hash(sender_raw) if sender_raw else None,
+            "sender_win_rate": round(win_rate, 1) if win_rate else None,
             "group_id": _short_hash(group_raw) if group_raw else None,
             "filter_passed": r.filter_passed,
             "bought": r.bought,

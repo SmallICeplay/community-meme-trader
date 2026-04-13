@@ -841,6 +841,7 @@ function SignalFeed() {
                   <th className="text-left px-4 py-2 font-medium">时间</th>
                   <th className="text-left px-2 py-2 font-medium">社区</th>
                   <th className="text-left px-2 py-2 font-medium">喊单人</th>
+                  <th className="text-right px-2 py-2 font-medium">胜率</th>
                   <th className="text-left px-2 py-2 font-medium">链</th>
                   <th className="text-left px-2 py-2 font-medium">代币</th>
                   <th className="text-left px-2 py-2 font-medium">合约</th>
@@ -870,6 +871,14 @@ function SignalFeed() {
                       <td className="px-2 py-1.5">
                         {s.sender_id
                           ? <span className="font-mono text-orange-400/80 bg-orange-900/20 px-1.5 py-0.5 rounded text-[11px]">#{s.sender_id}</span>
+                          : <span className="text-gray-700">—</span>}
+                      </td>
+                      <td className="px-2 py-1.5 text-right">
+                        {s.sender_win_rate != null
+                          ? <span className={clsx('font-mono text-[11px]',
+                              s.sender_win_rate >= 70 ? 'text-green-400' :
+                              s.sender_win_rate >= 50 ? 'text-yellow-400' : 'text-red-400'
+                            )}>{s.sender_win_rate}%</span>
                           : <span className="text-gray-700">—</span>}
                       </td>
                       <td className="px-2 py-1.5">
