@@ -351,6 +351,7 @@ function ChainBadge({ chain }) {
 function SideLog({ logs, connected }) {
   const listRef = useRef(null)
   const [autoScroll, setAutoScroll] = useState(true)
+  const seenIds = useRef(new Set())   // 已渲染过的 log id，不再加动画
 
   // 自动滚动到底部（最新消息在下方）
   useEffect(() => {
@@ -375,13 +376,17 @@ function SideLog({ logs, connected }) {
   const renderLog = (log) => {
     if (log.type === 'ping') return null
     const ts = log.ts ? new Date(log.ts).toLocaleTimeString('zh-CN', { hour12: false }) : ''
+    const isNew = !seenIds.current.has(log.id)
+    if (isNew) seenIds.current.add(log.id)
+    const enterCls = isNew ? 'card-pop' : ''
+    const rowCls   = isNew ? 'log-item-enter' : ''
 
     // ── 买入卡片 ──────────────────────────────────────────────────────────────
     if (log.type === 'buy') {
       const d = log.data || {}
       const name = d.symbol || d.token_name || (d.ca ? d.ca.slice(0, 8) + '…' : '—')
       return (
-        <div key={log.id} className="rounded-xl border border-green-800/50 bg-green-900/15 px-3 py-2.5 space-y-1.5 card-pop">
+        <div key={log.id} className={`rounded-xl border border-green-800/50 bg-green-900/15 px-3 py-2.5 space-y-1.5 ${enterCls}`}>
           {/* 头部：icon + 名称 + 链 + 时间 */}
           <div className="flex items-center gap-1.5 min-w-0">
             <TokenLogo url={d.logo_url} name={name} size={16} />
@@ -419,7 +424,7 @@ function SideLog({ logs, connected }) {
       const netPnl = hasGas ? (d.pnl_usdt || 0) - d.gas_fee_usd : null
       return (
         <div key={log.id} className={clsx(
-          'rounded-xl border px-3 py-2.5 space-y-1.5 card-pop',
+          'rounded-xl border px-3 py-2.5 space-y-1.5', enterCls,
           profit ? 'border-green-800/50 bg-green-900/15' : 'border-red-900/50 bg-red-900/10'
         )}>
           {/* 头部 */}
@@ -480,7 +485,7 @@ function SideLog({ logs, connected }) {
       const d = log.data || {}
       const name = d.token_name || (d.ca ? d.ca.slice(0, 8) + '…' : '—')
       return (
-        <div key={log.id} className="rounded-xl border border-red-800/60 bg-red-900/15 px-3 py-2.5 space-y-1.5 card-pop">
+        <div key={log.id} className={`rounded-xl border border-red-800/60 bg-red-900/15 px-3 py-2.5 space-y-1.5 ${enterCls}`}>
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="text-xs font-bold text-red-400 shrink-0">❌ 买入失败</span>
             <span className="text-gray-100 font-semibold text-sm truncate flex-1">{name}</span>
@@ -514,7 +519,7 @@ function SideLog({ logs, connected }) {
       const triggerLabel = SELL_REASON_ZH[d.sell_reason] || ''
       const isAbandoned = d.abandoned === true
       return (
-        <div key={log.id} className={`rounded-xl border px-3 py-2.5 space-y-1.5 card-pop ${isAbandoned ? 'border-red-700/80 bg-red-950/30' : 'border-orange-800/60 bg-orange-900/10'}`}>
+        <div key={log.id} className={`rounded-xl border px-3 py-2.5 space-y-1.5 ${enterCls} ${isAbandoned ? 'border-red-700/80 bg-red-950/30' : 'border-orange-800/60 bg-orange-900/10'}`}>
           <div className="flex items-center gap-1.5 min-w-0">
             <span className={`text-xs font-bold shrink-0 ${isAbandoned ? 'text-red-400' : 'text-orange-400'}`}>
               {isAbandoned ? '🚨 放弃卖出' : '⚠ 卖出失败'}
@@ -555,7 +560,7 @@ function SideLog({ logs, connected }) {
       const qwfcDelta = d.qwfc_delta || 0
       const isHot = qwfcDelta >= 10  // 热度暴涨标记
       return (
-        <div key={log.id} className="flex items-center gap-1.5 px-1 py-0.5 hover:bg-white/[0.02] rounded group log-item-enter">
+        <div key={log.id} className={`flex items-center gap-1.5 px-1 py-0.5 hover:bg-white/[0.02] rounded group ${rowCls}`}>
           <span className="text-gray-700 shrink-0 tabular-nums text-xs">{ts}</span>
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isFirst ? 'bg-blue-500/60' : 'bg-gray-600/60'}`} />
           {isFirst
@@ -583,7 +588,7 @@ function SideLog({ logs, connected }) {
     const textCls = meta?.cls || LEVEL_STYLE[log.level] || 'text-gray-400'
     const dotCls = meta?.dot || (log.level === 'error' ? 'bg-red-500' : log.level === 'warn' ? 'bg-yellow-500' : 'bg-gray-600')
     return (
-      <div key={log.id} className="flex items-start gap-1.5 px-1 py-0.5 hover:bg-white/[0.02] rounded log-item-enter">
+      <div key={log.id} className={`flex items-start gap-1.5 px-1 py-0.5 hover:bg-white/[0.02] rounded ${rowCls}`}>
         <span className="text-gray-700 shrink-0 tabular-nums text-xs mt-0.5">{ts}</span>
         <span className={clsx('w-1.5 h-1.5 rounded-full shrink-0 mt-1', dotCls)} />
         <span className={clsx('text-xs break-all leading-relaxed', textCls)}>{msg}</span>
@@ -632,12 +637,39 @@ function HeaderStats({ stats, posCount }) {
   const todayPnl = stats ? ((stats.total_pnl_usdt ?? 0) - (stats.total_gas_usd ?? 0)) : null
   const trades   = stats?.total_trades ?? null
 
-  const pnlCls  = useNumBump(todayPnl)
-  const posCls  = useNumBump(posCount)
+  // 资产总额（各链 native + USDT + 持仓估值）
+  const [totalAsset, setTotalAsset] = useState(null)
+  useEffect(() => {
+    let alive = true
+    fetch('/api/analytics/portfolio')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!alive || !d) return
+        // native_balance 需要乘以链价格，portfolio 里暂时用 position_value 近似
+        const usdt = d.chains.reduce((s, c) => s + (Number(c.usdt_balance) || 0), 0)
+        const pos  = d.total_position_value_usdt || 0
+        setTotalAsset(usdt + pos)
+      })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [posCount]) // 持仓变化时刷新
+
+  const pnlCls   = useNumBump(todayPnl)
+  const posCls   = useNumBump(posCount)
   const tradeCls = useNumBump(trades)
+  const assetCls = useNumBump(totalAsset)
 
   return (
     <div className="hidden md:flex items-center gap-5">
+      {/* 当前资产 */}
+      <div className="flex flex-col items-center">
+        <span className="text-[10px] text-gray-600 leading-none mb-0.5">当前资产</span>
+        <span className={clsx('text-sm font-bold font-mono tabular-nums text-yellow-400', assetCls)}>
+          {totalAsset === null ? '—' : `$${totalAsset.toFixed(2)}`}
+        </span>
+      </div>
+      <div className="w-px h-6 bg-dark-500" />
+      {/* 净盈亏 */}
       <div className="flex flex-col items-center">
         <span className="text-[10px] text-gray-600 leading-none mb-0.5">净盈亏</span>
         <span className={clsx(
@@ -649,6 +681,7 @@ function HeaderStats({ stats, posCount }) {
         </span>
       </div>
       <div className="w-px h-6 bg-dark-500" />
+      {/* 总交易 */}
       <div className="flex flex-col items-center">
         <span className="text-[10px] text-gray-600 leading-none mb-0.5">总交易</span>
         <span className={clsx('text-sm font-bold font-mono text-gray-300', tradeCls)}>
@@ -656,6 +689,7 @@ function HeaderStats({ stats, posCount }) {
         </span>
       </div>
       <div className="w-px h-6 bg-dark-500" />
+      {/* 持仓 */}
       <div className="flex flex-col items-center">
         <span className="text-[10px] text-gray-600 leading-none mb-0.5">持仓</span>
         <span className={clsx(
