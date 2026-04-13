@@ -660,7 +660,7 @@ function HeaderStats({ stats, posCount }) {
   const assetCls = useNumBump(totalAsset)
 
   return (
-    <div className="hidden md:flex items-center gap-5">
+    <div className="flex items-center gap-5">
       {/* 当前资产 */}
       <div className="flex flex-col items-center">
         <span className="text-[10px] text-gray-600 leading-none mb-0.5">当前资产</span>
