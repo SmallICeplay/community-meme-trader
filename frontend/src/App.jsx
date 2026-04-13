@@ -841,7 +841,9 @@ function SignalFeed() {
                   <th className="text-left px-4 py-2 font-medium">时间</th>
                   <th className="text-left px-2 py-2 font-medium">社区</th>
                   <th className="text-left px-2 py-2 font-medium">喊单人</th>
-                  <th className="text-right px-2 py-2 font-medium">胜率</th>
+                  <th className="text-right px-2 py-2 font-medium">
+                    <span title="来源方自报胜率，定义不透明，仅供参考" className="cursor-help border-b border-dashed border-gray-600">胜率*</span>
+                  </th>
                   <th className="text-left px-2 py-2 font-medium">链</th>
                   <th className="text-left px-2 py-2 font-medium">代币</th>
                   <th className="text-left px-2 py-2 font-medium">合约</th>
