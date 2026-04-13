@@ -25,3 +25,7 @@ export const sweepResidualTokens = () => api.post('/sweep').then(r => r.data)
 // 链上余额查询 & 批量卖出
 export const getWalletBalances = () => api.get('/positions/balances').then(r => r.data)
 export const sellBatch = (items) => api.post('/positions/sell_batch', { items }).then(r => r.data)
+
+// 最近信号流
+export const getRecentSignals = (limit = 50) =>
+  api.get('/analytics/recent_signals', { params: { limit } }).then(r => r.data)

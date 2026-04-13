@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { getTradeStats, getPositions, getConfig, updateConfig, getTradeHistory } from './api'
+import { getTradeStats, getPositions, getConfig, updateConfig, getTradeHistory, getRecentSignals } from './api'
 import { useWebSocket } from './hooks/useWebSocket'
 import ConfigPanel from './components/ConfigPanel'
 import { GasAnalysisPanel } from './components/ConfigPanel'
@@ -281,7 +281,10 @@ function Dashboard({ stats, posCount, onRefresh }) {
         />
       </div>
 
-      {/* 2. 持仓表 */}
+      {/* 2. 信号流 */}
+      <SignalFeed />
+
+      {/* 3. 持仓表 */}
       <PositionsTable onRefresh={onRefresh} />
 
       {/* 3. 钱包资产总览 */}
@@ -745,6 +748,126 @@ function Row({ label, value, valueColor = 'text-gray-300' }) {
     <div className="flex justify-between items-center">
       <span className="text-gray-500">{label}</span>
       <span className={clsx('font-mono', valueColor)}>{value}</span>
+    </div>
+  )
+}
+
+// ── 信号流（喊单记录） ─────────────────────────────────────────────────────────
+const CHAIN_BADGE = {
+  bsc:    'text-yellow-400 bg-yellow-400/10',
+  solana: 'text-purple-400 bg-purple-400/10',
+  eth:    'text-blue-400 bg-blue-400/10',
+  xlayer: 'text-cyan-400 bg-cyan-400/10',
+}
+
+function SignalFeed() {
+  const [signals, setSignals] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [collapsed, setCollapsed] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    const load = () => {
+      getRecentSignals(60).then(d => { if (alive) { setSignals(d); setLoading(false) } }).catch(() => { if (alive) setLoading(false) })
+    }
+    load()
+    const t = setInterval(load, 15000)
+    return () => { alive = false; clearInterval(t) }
+  }, [])
+
+  const fmt = (iso) => {
+    const d = new Date(iso)
+    return `${d.getMonth() + 1}/${d.getDate()} ${d.toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit' })}`
+  }
+
+  return (
+    <div className="bg-dark-800 rounded-xl border border-dark-600 overflow-hidden">
+      {/* 标题栏 */}
+      <div
+        className="flex items-center justify-between px-4 py-2.5 cursor-pointer select-none border-b border-dark-600"
+        onClick={() => setCollapsed(v => !v)}
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-gray-300">喊单信号流</span>
+          <span className="text-xs text-gray-600">({signals.length})</span>
+        </div>
+        <span className={clsx('text-gray-600 text-xs transition-transform', collapsed ? '' : 'rotate-180')}>▼</span>
+      </div>
+
+      {!collapsed && (
+        loading ? (
+          <div className="text-center text-gray-600 py-4 text-xs">加载中...</div>
+        ) : signals.length === 0 ? (
+          <div className="text-center text-gray-600 py-4 text-xs">暂无信号</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-gray-600 border-b border-dark-700">
+                  <th className="text-left px-4 py-2 font-medium">时间</th>
+                  <th className="text-left px-2 py-2 font-medium">社区</th>
+                  <th className="text-left px-2 py-2 font-medium">喊单人</th>
+                  <th className="text-left px-2 py-2 font-medium">链</th>
+                  <th className="text-left px-2 py-2 font-medium">代币</th>
+                  <th className="text-left px-2 py-2 font-medium">合约</th>
+                  <th className="text-center px-2 py-2 font-medium">第几次</th>
+                  <th className="text-center px-2 py-2 font-medium">过滤</th>
+                  <th className="text-center px-4 py-2 font-medium">买入</th>
+                </tr>
+              </thead>
+              <tbody>
+                {signals.map((s, i) => {
+                  const chainCls = CHAIN_BADGE[s.chain?.toLowerCase()] || 'text-gray-400 bg-gray-400/10'
+                  const isPassed = s.filter_passed
+                  const isBought = s.bought
+                  return (
+                    <tr key={s.id} className={clsx(
+                      'border-b border-dark-700/50 hover:bg-dark-700/20 transition-colors',
+                      isBought && 'bg-green-900/10'
+                    )}>
+                      <td className="px-4 py-1.5 font-mono text-gray-500 whitespace-nowrap">{fmt(s.received_at)}</td>
+                      <td className="px-2 py-1.5">
+                        {s.group_id
+                          ? <span className="font-mono text-blue-400/80 bg-blue-900/20 px-1.5 py-0.5 rounded text-[11px]">社区#{s.group_id}</span>
+                          : <span className="text-gray-700">—</span>}
+                      </td>
+                      <td className="px-2 py-1.5">
+                        {s.sender_id
+                          ? <span className="font-mono text-orange-400/80 bg-orange-900/20 px-1.5 py-0.5 rounded text-[11px]">#{s.sender_id}</span>
+                          : <span className="text-gray-700">—</span>}
+                      </td>
+                      <td className="px-2 py-1.5">
+                        <span className={clsx('px-1.5 py-0.5 rounded font-bold text-[11px]', chainCls)}>
+                          {s.chain?.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-2 py-1.5 text-gray-300 max-w-[80px] truncate" title={s.symbol}>{s.symbol || '—'}</td>
+                      <td className="px-2 py-1.5 font-mono text-gray-600 text-[11px]">
+                        <span title={s.ca}>{s.ca.slice(0, 6)}…{s.ca.slice(-4)}</span>
+                      </td>
+                      <td className="px-2 py-1.5 text-center">
+                        {s.push_count > 1
+                          ? <span className="text-orange-400 font-bold">第{s.push_count}次</span>
+                          : <span className="text-gray-600">首次</span>}
+                      </td>
+                      <td className="px-2 py-1.5 text-center">
+                        {isPassed
+                          ? <span className="text-green-400">✓</span>
+                          : <span className="text-gray-700">✗</span>}
+                      </td>
+                      <td className="px-4 py-1.5 text-center">
+                        {isBought
+                          ? <span className="text-green-400 font-bold">已买</span>
+                          : <span className="text-gray-700">—</span>}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )
+      )}
     </div>
   )
 }

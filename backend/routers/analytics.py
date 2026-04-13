@@ -6,7 +6,15 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, Integer
 from datetime import datetime, timedelta
+import hashlib
 from database import get_db, CaFeed, SenderStats, Trade, Position, PriceSnapshot
+
+
+def _short_hash(s: str, length: int = 4) -> str:
+    """把字符串哈希成固定长度的大写十六进制编号，用于隐藏真实名称"""
+    if not s:
+        return "????"
+    return hashlib.md5(s.encode('utf-8', errors='replace')).hexdigest()[:length].upper()
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
 
@@ -291,6 +299,7 @@ async def get_ca_feed(
                 "market_cap": r.market_cap,
                 "holders": r.holders,
                 "risk_score": r.risk_score,
+                "grcxcs": r.grcxcs,
                 "filter_passed": r.filter_passed,
                 "filter_reason": r.filter_reason,
                 "bought": r.bought,
@@ -299,6 +308,43 @@ async def get_ca_feed(
             for r in rows
         ],
     }
+
+
+@router.get("/recent_signals")
+async def get_recent_signals(
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db),
+):
+    """最近信号流，用于首页展示。sender/group 脱敏为哈希编号。"""
+    import json as _json
+    q = select(CaFeed).order_by(desc(CaFeed.received_at)).limit(limit)
+    result = await db.execute(q)
+    rows = result.scalars().all()
+
+    out = []
+    for r in rows:
+        # 尝试从 raw_json 解析 qun_name
+        group_raw = ""
+        try:
+            raw = _json.loads(r.raw_json or "{}")
+            group_raw = raw.get("qun_name", "") or ""
+        except Exception:
+            pass
+
+        sender_raw = r.sender or ""
+        out.append({
+            "id": r.id,
+            "received_at": r.received_at.isoformat(),
+            "ca": r.ca,
+            "chain": r.chain,
+            "symbol": r.symbol or r.token_name or "",
+            "push_count": r.grcxcs,      # 第几次推送该 CA
+            "sender_id": _short_hash(sender_raw) if sender_raw else None,
+            "group_id": _short_hash(group_raw) if group_raw else None,
+            "filter_passed": r.filter_passed,
+            "bought": r.bought,
+        })
+    return out
 
 
 # ── 持仓价格曲线 ───────────────────────────────────────────────────────────────
