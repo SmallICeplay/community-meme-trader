@@ -227,7 +227,7 @@ export default function App() {
                 'w-2 h-2 rounded-full shrink-0',
                 botEnabled ? 'bg-accent-green bot-glow' : 'bg-gray-600'
               )} />
-              <span className="text-sm md:text-lg font-bold text-white whitespace-nowrap">Holdo.AI × AVE</span>
+              <span className="text-sm md:text-lg font-bold text-white whitespace-nowrap">Hodlo.AI × AVE</span>
             </div>
             <div className={clsx(
               'text-xs px-1.5 py-0.5 rounded-full hidden sm:block',

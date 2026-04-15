@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { clsx } from 'clsx'
 import { Card } from './UI'
 
-const ADMIN_TOKEN_KEY = 'holdo_admin_token'
+const ADMIN_TOKEN_KEY = 'hodlo_admin_token'
 
 // ── API helpers ───────────────────────────────────────────────
 async function adminFetch(path, options = {}) {

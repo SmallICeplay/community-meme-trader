@@ -3,17 +3,20 @@ from functools import lru_cache
 
 
 import os as _os
+from pydantic import ConfigDict
 
 _ENV_FILE = _os.path.join(_os.path.dirname(__file__), "..", ".env")
 
 
 class Settings(BaseSettings):
+    model_config = ConfigDict(extra="ignore", env_file=_ENV_FILE, env_file_encoding="utf-8")
+
     ave_api_key: str = ""
     ave_base_url: str = "https://bot-api.ave.ai"
     wallet_mnemonic: str = ""           # 旧字段保留兼容，新方案用 DB 存加密助记词
     wallet_master_password: str = "holdo_default_change_me"  # 加密钱包的主密码
     ca_ws_url: str = "ws://43.254.167.238:3000/token"
-    backend_port: int = 8000
+    backend_port: int = 9000
     database_url: str = "sqlite+aiosqlite:///./meme_trader.db"
 
     # ── 管理员认证 ────────────────────────────────────────────────
@@ -23,10 +26,6 @@ class Settings(BaseSettings):
 
     # ── 演示钱包 ──────────────────────────────────────────────────
     demo_wallet_mnemonic: str = ""      # 演示钱包助记词，用 WALLET_MASTER_PASSWORD 加密后存 DB
-
-    class Config:
-        env_file = _ENV_FILE
-        env_file_encoding = "utf-8"
 
 
 @lru_cache()

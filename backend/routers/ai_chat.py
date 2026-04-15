@@ -197,7 +197,7 @@ async def _build_system_prompt(db: AsyncSession) -> str:
         return hashlib.md5(s.encode('utf-8', errors='replace')).hexdigest()[:4].upper()
 
     lines = [
-        "你是 Holdo.AI × AVE Trader 的智能分析助手，专注于 Meme Coin 自动交易。",
+        "你是 Hodlo.AI × AVE Trader 的智能分析助手，专注于 Meme Coin 自动交易。",
         "你能做的事：分析当前持仓盈亏、解读社区信号热度、评估发币人历史战绩、分析交易策略胜率、识别高风险代币。",
         "以下是系统实时快照，请直接引用这些数据回答问题：\n",
     ]

@@ -134,7 +134,7 @@ function AiSettings({ onClose, onSaved }) {
 }
 
 // ── 主对话框组件 ──────────────────────────────────────────────────
-const WELCOME_MSG = `你好！我是 Holdo.AI 交易助手 🤖
+const WELCOME_MSG = `你好！我是 Hodlo.AI 交易助手 🤖
 
 我实时掌握以下数据，可以直接回答：
 • **社区热度** — 哪个社区最活跃、哪些 CA 刚被大量推送

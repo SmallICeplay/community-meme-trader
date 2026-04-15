@@ -461,7 +461,7 @@ class AveClient:
         except Exception as sign_err:
             logger.error(f"sign_transaction failed: {sign_err} | tx={tx}")
             raise
-        return signed.raw_transaction.hex()
+        return signed.rawTransaction.hex()
 
     def _fetch_nonce_and_gas(
         self,
@@ -783,7 +783,7 @@ class AveClient:
         }
         logger.info(f"Sending approve tx: token={token_addr[:10]} spender={spender[:10]} chain={chain_id} gasPrice={approve_gas_price/1e9:.2f}Gwei")
         signed = Account.sign_transaction(approve_tx, private_key)
-        raw_hex = "0x" + signed.raw_transaction.hex()
+        raw_hex = signed.rawTransaction.hex()
 
         with _httpx.Client(timeout=30.0) as c:
             r2 = c.post(rpc_url, json={"jsonrpc":"2.0","method":"eth_sendRawTransaction","params":[raw_hex],"id":2})
@@ -801,7 +801,7 @@ class AveClient:
                         _nonce_local[chain_id] = latest_nonce
                         approve_tx["nonce"] = latest_nonce
                         signed2 = Account.sign_transaction(approve_tx, private_key)
-                        raw_hex2 = "0x" + signed2.raw_transaction.hex()
+                        raw_hex2 = signed2.rawTransaction.hex()
                         r2b = c.post(rpc_url, json={"jsonrpc":"2.0","method":"eth_sendRawTransaction","params":[raw_hex2],"id":2})
                         r2j = r2b.json()
                         if "error" in r2j:
@@ -1524,7 +1524,7 @@ class AveClient:
             "nonce":    alloc_nonce,
         }
         signed = _Account.sign_transaction(tx, private_key)
-        raw_hex = "0x" + signed.raw_transaction.hex()
+        raw_hex = signed.rawTransaction.hex()
         logger.info(f"DEX 直接广播: router={router[:16]} nonce={alloc_nonce} gas={gas_price/1e9:.2f}Gwei")
 
         async with _httpx.AsyncClient(timeout=15.0) as c:
