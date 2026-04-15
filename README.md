@@ -1,97 +1,131 @@
 # Holdo.AI Meme Trader
 
-> **全自动 Meme 币交易机器人** — 从信号接收到链上成交，端到端自动化，延迟 < 1s。
+> **社区信号驱动的全自动 Meme 币交易机器人** — 聚合多个 Alpha 社群的实时喊单信号，用算法过滤噪音，毫秒级上链执行。
 
 ---
 
-## 这是什么
+## 核心思路：让社区帮你选币，让机器帮你下单
 
-Meme 币市场的核心逻辑只有一条：**谁快谁赚钱**。
+Meme 币的 Alpha 藏在 Telegram/Discord 社群里。每天无数个群在喊单，但：
 
-人工看盘、手动下单已经落后了。真正的玩家用机器人。
+- **99% 都是噪音** — 庄家自导自演、新人乱喊、追高砸盘
+- **真正的信号转瞬即逝** — 好币被多个顶级 Alpha 群同时喊到时，留给普通人的时间窗口只有几秒
 
-Holdo.AI Meme Trader 是一套**完整的自动化链上交易系统**：
-从 WebSocket 接收代币合约地址信号（CA），毫秒级完成多维度风控过滤，自动在链上买入，实时监控涨跌，触发止盈/止损后自动卖出——全程无需人工干预。
+Holdo.AI Meme Trader 解决的就是这个问题：
 
-支持 **Solana、BSC、Ethereum、Base** 四条链，一套系统统一管理。
+**接入多个 Alpha 社区的实时信号流 → 算法识别高质量信号 → 自动上链交易 → 自动止盈止损**
+
+人负责选社区，机器负责其他一切。
 
 ---
 
-## 核心能力
+## 社区信号智能分析
 
-### 信号 → 买入，< 1 秒
+系统接收的每条 CA 信号都携带完整的社区热度数据，过滤引擎基于这些数据做决策：
 
-```
-CA 信号到达 → 过滤引擎 → 链上签名广播 → 持仓建立
-     ↑
-WebSocket 实时推送，指数退避自动重连，断线不丢单
-```
+### 社区热度维度
 
-- 收到 CA 信号后立即触发过滤
-- 通过所有条件后异步发起链上交易
-- 内存级别去重锁，同一 CA 不会重复买入
-- 买入失败进入 5 分钟冷却黑名单，避免反复踩坑
+| 字段 | 含义 | 用途 |
+|------|------|------|
+| `qwfc` 全网发送次数 | 这个 CA 在所有接入社区里被喊了多少次 | 热度门槛，低于阈值不买 |
+| `bqfc` 本群发送次数 | 在当前信号源群里的提及次数 | 群内共识强度 |
+| `fgq` 覆盖群数量 | 同时有多少个独立社群在喊这个 CA | **关键指标：跨社区共鸣** |
+| `grcxcs` 个人查询次数 | 有多少人主动查过这个币 | 真实用户关注度 |
+| `cxrzf` 当前涨幅 | 信号发出时币已经涨了多少倍 | 防追高，超过上限跳过 |
 
-### 多维度智能过滤
+**核心逻辑**：一个 CA 同时被多个独立社群喊到（`fgq` 高），且喊单人历史胜率高，才是真正的 Alpha 信号。
 
-不是所有 CA 都值得买。过滤引擎支持以下条件（全部可配置阈值）：
+### 喊单人信誉体系
+
+系统为每个喊单人建立本地信誉档案，独立追踪其历史表现：
 
 | 维度 | 说明 |
 |------|------|
-| 发送者胜率 | 喊单人历史胜率、总喊单数、群组胜率 |
-| 发送者最佳倍数 | 历史最高收益倍数门槛 |
-| 当前涨幅（cxrzf）| 已涨多少倍，过高的不追 |
-| 市值范围 | 最小/最大市值过滤 |
-| 持仓集中度 | Top 10 持仓占比，防止大户砸盘 |
-| 安全评分 | Honeypot 检测、风险评分 |
-| 新人策略 | 无历史记录的发币人：跳过 / 半仓 / 正常买 |
-| 跟单模式 | 指定钱包地址，只跟特定高手 |
+| `sender_win_rate` | 全局历史胜率 |
+| `sender_group_win_rate` | 在本群的胜率（群内更精准的参考） |
+| `sender_total_tokens` | 总喊单数（样本量） |
+| `sender_best_multiple` | 历史最高收益倍数 |
 
-支持**半仓策略**：条件弱的信号自动减半买入，控制风险。
+新人（无历史记录）可配置为：跳过 / 半仓试水 / 正常买入。
 
-### 持仓全自动管理
+### 过滤决策流
 
-买入后不用盯盘，系统每 10 秒轮询一次价格：
+```
+收到 CA 信号
+      ↓
+喊单人检查 → 胜率 / 喊单量 / 历史最高倍数不达标？跳过
+      ↓
+防追高检查 → 已涨超过 N 倍？跳过
+      ↓
+社区热度检查 → 全网次数 / 覆盖群数 / 查询次数不足？跳过
+      ↓
+市场数据检查 → 市值 / 5分钟涨幅 / 1小时买量不达标？跳过
+      ↓
+安全检查 → 蜜罐 / 可增发 / 风险评分过高 / 持仓过集中？跳过
+      ↓
+全部通过 → 自动买入（全仓 or 半仓）
+```
 
-- **止盈**：涨到目标倍数自动卖出
-- **止损**：跌破阈值自动止损
-- **超时退出**：超过最长持仓时间自动清仓
-- **归零检测**：链上余额为 0（被 rug）自动关仓，不再挂单
-- **Token-2022 兼容**：完整支持 pump.fun 新代币（SPL + Token-2022 双协议）
+所有阈值均可在配置面板实时调整，无需重启。
 
-### 链上执行质量
+---
 
-- **买入前余额预检**：USDT 不足直接跳过，不发无效 TX 浪费 Gas
-- **Receipt 轮询确认**：直播广播模式下等待链上确认，TX revert 不建仓
-- **Nonce 回退机制**：交易失败后正确回退 nonce，不卡链
-- **SOL 链真实余额查询**：卖出前查链上 ATA 实际余额，避免 `Insufficient token balance`
-- **多路由支持**：AVE Trade、PancakeSwap Direct 等多条路由可选
+## 从信号到成交，全程自动化
 
-### 多钱包管理
+```
+社区 Alpha 群（多源）
+       ↓ WebSocket 实时推送
+CA 监听器（指数退避自动重连）
+       ↓ 毫秒级触发
+过滤引擎（多维度风控）
+       ↓ 通过
+AVE 链上执行（Solana / BSC / ETH / Base）
+       ↓ 建仓
+持仓监控（每 10 秒轮询）
+       ↓
+止盈 / 止损 / 超时 / 归零检测
+       ↓
+自动卖出 → 记录盈亏
+```
 
-- BIP39 助记词导入，AES 加密存储
-- 支持 SOL / BSC / ETH / Base 多链地址统一管理
-- 实时余额查询（原生币 + USDT/USDC + 持仓估值）
-- 残留代币一键清扫
-- Demo 钱包供体验测试
+**延迟**：信号到达→链上广播 < 1 秒
 
-### 数据分析
+---
 
-- 胜率、盈亏比、平均盈亏、最大连胜/连败
-- 按小时/日/周/月/季/年多时段统计
-- **CA 战绩排行榜**：哪些代币最能赚？多维排序（总盈亏/胜率/最大收益/交易次数）
-- 信号统计：接收量、通过率、买入转化率
-- 发送者本地信誉积累：独立于外部数据源追踪喊单人胜率
-- 每笔交易完整记录（入场价、出场价、出局原因、Gas 费、TX Hash）
+## 链上执行质量
 
-### 实时界面
+买入不只是发交易，还要保证每笔都真实有效：
 
-React + WebSocket，所有事件实时推送：
+- **买入前余额预检** — USDT 不足直接跳过，不浪费 Gas
+- **Receipt 轮询确认** — 等待链上 confirm，TX revert 不建仓，不产生假持仓
+- **Nonce 回退** — 交易失败正确释放 nonce，不卡链
+- **Token-2022 兼容** — 完整支持 pump.fun 新代币（SPL + Token-2022 双协议）
+- **SOL 真实余额查询** — 卖出前查链上 ATA 实际余额，不依赖 DB 估算值
+- **同 CA 去重锁** — 内存级别防止同一 CA 并发重复买入
 
-- 买入/卖出执行日志（含 TX Hash、Gas 费）
-- CA 信号接收流（含热度、市值、发送者信息）
-- 持仓实时盈亏
-- 连接状态监控
+---
+
+## 持仓管理
+
+| 退出条件 | 说明 |
+|----------|------|
+| 止盈 | 涨到目标倍数自动卖出 |
+| 止损 | 跌破阈值自动清仓 |
+| 超时 | 超过最长持仓时间强制退出 |
+| 归零检测 | 链上余额为 0（rug）自动关仓 |
+
+所有参数可配置，全程无需盯盘。
+
+---
+
+## 数据分析
+
+交易结束不是终点，系统持续积累数据帮你优化策略：
+
+- **CA 战绩排行榜** — 哪些 CA 最能赚？多维排序（总盈亏/胜率/最大收益），可按时段筛选
+- **信号漏斗统计** — 接收量 → 通过率 → 买入转化率，找出过滤瓶颈
+- **喊单人信誉积累** — 本地追踪每个喊单人的真实胜率，越用越准
+- **完整交易记录** — 每笔含入场价、出场价、出局原因、Gas 费、TX Hash
 
 ---
 
@@ -99,31 +133,31 @@ React + WebSocket，所有事件实时推送：
 
 ```
 ┌─────────────────────────────────────────────────┐
-│                  React Frontend                  │
-│         (Vite + Tailwind + Recharts)             │
+│              React 18 Frontend                   │
+│      (Vite + Tailwind CSS + Recharts)            │
 └──────────────────────┬──────────────────────────┘
                        │ REST API + WebSocket
 ┌──────────────────────▼──────────────────────────┐
-│              FastAPI Backend (async)             │
-│  ┌──────────┐  ┌────────────┐  ┌─────────────┐ │
-│  │CA Listener│  │Trade Engine│  │Position Mon.│ │
-│  │(WebSocket)│  │(Filter+Buy)│  │(TP/SL loop) │ │
-│  └──────────┘  └────────────┘  └─────────────┘ │
-│  ┌──────────┐  ┌────────────┐  ┌─────────────┐ │
-│  │AVE Client │  │Wallet Mgr. │  │ Broadcaster │ │
-│  │(4 chains) │  │(AES encr.) │  │ (WS push)   │ │
-│  └──────────┘  └────────────┘  └─────────────┘ │
-│              SQLAlchemy (SQLite / async)          │
+│           FastAPI Backend (全异步)               │
+│                                                  │
+│  CA Listener  →  Trade Engine  →  AVE Client     │
+│  (WS 多源)       (过滤+决策)      (4链执行)      │
+│                                                  │
+│  Position Monitor  ←→  Broadcaster               │
+│  (TP/SL/超时/归零)      (WS 实时推送)            │
+│                                                  │
+│         SQLAlchemy async (SQLite)                │
 └─────────────────────────────────────────────────┘
-                       │
-         ┌─────────────┼─────────────┐
-      Solana         BSC          ETH/Base
+              ↓              ↓         ↓        ↓
+           Solana           BSC       ETH      Base
 ```
 
-**后端**：Python 3.10+、FastAPI、SQLAlchemy async、httpx
-**前端**：React 18、Vite、Tailwind CSS、Recharts
-**区块链**：AVE Trading API、eth-account（EVM 签名）、solders（Solana 签名）
-**存储**：SQLite（全异步 aiosqlite）
+| 层 | 技术 |
+|----|------|
+| 后端 | Python 3.10+, FastAPI, SQLAlchemy async |
+| 前端 | React 18, Vite, Tailwind CSS, Recharts |
+| 链上 | AVE Trading API, eth-account (EVM), solders (Solana) |
+| 实时 | WebSocket 双向（信号接收 + 前端推送） |
 
 ---
 
@@ -140,10 +174,7 @@ React + WebSocket，所有事件实时推送：
 git clone <repo-url>
 cd meme-trader-main
 
-# 后端依赖
 pip install -r requirements.txt
-
-# 前端依赖
 cd frontend && npm install && cd ..
 ```
 
@@ -156,47 +187,37 @@ cp .env.example .env
 | 变量 | 说明 |
 |------|------|
 | `AVE_API_KEY` | AVE 交易 API 密钥 |
-| `AVE_BASE_URL` | AVE API 地址 |
+| `CA_WS_URL` | 社区信号源 WebSocket 地址 |
 | `WALLET_MASTER_PASSWORD` | 钱包加密主密码 |
-| `CA_WS_URL` | 信号源 WebSocket 地址 |
 | `BACKEND_PORT` | 后端端口（默认 8000）|
 
 ### 启动
 
 ```bash
-# Linux/Mac
-./start.sh
-
-# Windows
-start.bat
+./start.sh      # Linux/Mac
+start.bat       # Windows
 ```
 
-访问 `http://localhost:5173` 进入管理界面。
-API 文档：`http://localhost:8000/docs`
+- 管理界面：`http://localhost:5173`
+- API 文档：`http://localhost:8000/docs`
 
 ---
 
 ## 项目结构
 
 ```
-meme-trader-main/
-├── backend/
-│   ├── main.py                  # FastAPI 入口
-│   ├── routers/                 # 40+ API 路由
-│   └── services/
-│       ├── trade_engine.py      # 过滤 + 买入决策
-│       ├── position_monitor.py  # 止盈/止损自动化
-│       ├── ave_client.py        # 4 链交易客户端
-│       ├── ca_listener.py       # 信号 WebSocket 监听
-│       ├── wallet_manager.py    # 加密钱包管理
-│       └── broadcaster.py       # 实时日志推送
-├── frontend/
-│   └── src/
-│       ├── App.jsx              # 主界面
-│       └── components/          # 各功能面板
-├── requirements.txt
-├── .env.example
-└── start.sh / start.bat
+backend/
+├── services/
+│   ├── ca_listener.py       # 社区信号 WebSocket 监听
+│   ├── trade_engine.py      # 信号过滤 + 买入决策
+│   ├── position_monitor.py  # 止盈/止损自动化
+│   ├── ave_client.py        # 4链链上交易执行
+│   └── wallet_manager.py    # AES 加密钱包管理
+└── routers/                 # 40+ REST API 端点
+
+frontend/src/
+├── App.jsx                  # 主界面
+└── components/              # 持仓、历史、分析、配置面板
 ```
 
 ---
@@ -210,3 +231,6 @@ meme-trader-main/
 ## 免责声明
 
 本项目仅供学习研究和黑客松展示。加密货币交易有极高风险，请勿用真实资金盲目跟单。
+#   c o m m u n i t y - m e m e - t r a d e r - o k x 
+ 
+ 
