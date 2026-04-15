@@ -231,6 +231,6 @@ frontend/src/
 ## 免责声明
 
 本项目仅供学习研究和黑客松展示。加密货币交易有极高风险，请勿用真实资金盲目跟单。
-#   c o m m u n i t y - m e m e - t r a d e r - o k x 
+#   c o m m u n i t y - m e m e - t r a d e r - a v e 
  
  
