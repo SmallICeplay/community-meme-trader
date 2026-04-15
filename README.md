@@ -1,4 +1,4 @@
-# Holdo.AI Meme Trader
+# Hodlo.AI Meme Trader
 
 > **社区信号驱动的全自动 Meme 币交易机器人** — 聚合多个 Alpha 社群的实时喊单信号，用算法过滤噪音，毫秒级上链执行。
 
@@ -11,7 +11,7 @@ Meme 币的 Alpha 藏在 Telegram/微信 社群里。每天无数个群在喊单
 - **99% 都是噪音** — 庄家自导自演、新人乱喊、追高砸盘
 - **真正的信号转瞬即逝** — 好币被多个顶级 Alpha 群同时喊到时，留给普通人的时间窗口只有几秒
 
-Holdo.AI Meme Trader 解决的就是这个问题：
+Hodlo.AI Meme Trader 解决的就是这个问题：
 
 **接入多个 Alpha 社区的实时信号流 → 算法识别高质量信号 → 自动上链交易 → 自动止盈止损**
 
